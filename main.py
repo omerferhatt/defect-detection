@@ -1,7 +1,15 @@
+import tensorflow as tf
+
 from data.dataset import get_ds_pipeline
-from models.mobilenet_v2 import get_model
+from models.defect_model import DefectLocalizeModel
+from train import ModelTrainer
 
 if __name__ == '__main__':
-    train_ds, test_ds = get_ds_pipeline(batch_size=64)
-    model = get_model()
-    model.fit(train_ds, epochs=20, validation_data=test_ds)
+    train_ds, test_ds = get_ds_pipeline()
+    defect_cls = DefectLocalizeModel(backbone=tf.keras.applications.efficientnet.EfficientNetB0)
+    defect_cls.model.summary()
+    trainer = ModelTrainer(defect_cls.model, epoch=10)
+    trainer.set_optimizer(tf.keras.optimizers.SGD(learning_rate=1e-3, momentum=0.9, nesterov=True))
+    trainer.set_loss(tf.keras.losses.CategoricalCrossentropy())
+    trainer.set_metrics(tf.keras.metrics.CategoricalAccuracy(), tf.keras.metrics.BinaryAccuracy())
+    trainer.training_loop(train_ds, test_ds)
