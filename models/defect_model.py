@@ -24,10 +24,18 @@ class DefectLocalizeModel:
         x = Dropout(0.2)(x)
         x = Dense(64)(x)
         x = BatchNormalization()(x)
-        x = ReLU()(x)
-        x = Dropout(0.2)(x)
-        x = Dense(self.num_output)(x)
-        return Model(inputs=self.backbone.input, outputs=x)
+        x_1 = ReLU()(x)
+
+        x = Dropout(0.2)(x_1)
+        x_out_1 = Dense(1, activation='sigmoid')(x)
+
+        x = Dropout(0.2)(x_1)
+        x_out_2 = Dense(3, activation='softmax')(x)
+
+        x = Dropout(0.2)(x_1)
+        x_out_3 = Dense(5, activation='linear')(x)
+
+        return Model(inputs=self.backbone.input, outputs=[x_out_1, x_out_3, x_out_2])
 
     @property
     def model(self):

@@ -41,9 +41,10 @@ class Dataset:
         is_defect = tf.expand_dims(is_defect, 0)
         class_labels = tf.stack(class_labels, axis=-1)
         bbox = tf.stack(bbox, axis=-1)
-        target_label = tf.concat([is_defect, bbox, class_labels], axis=-1)
+        # target_label = tf.concat([is_defect, bbox, class_labels], axis=-1)
         img = tf.image.resize(img, size=(224, 224))
-        return img, target_label
+        return img, is_defect, bbox, class_labels
+        # return img, target_label
 
     @property
     def record_defaults(self):

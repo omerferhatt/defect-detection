@@ -13,31 +13,34 @@ class ModelTrainer:
         self._train_metrics = None
         self._val_metrics = None
 
-    @tf.function
+    # @tf.function
     def train_step(self, x, y):
         with tf.GradientTape() as tape:
             logits = self.model(x, training=True)
-            is_defect_y = y[:, :1]
-            bbox_y = y[:, 1:5]
-            cls_y = y[:, 5:]
-            loss_is_defect = tf.keras.losses.binary_crossentropy(is_defect_y, logits[:, :1], from_logits=True)
-            loss_bbox = tf.keras.losses.mse(bbox_y, logits[:, 1:5])
-            loss_cls = tf.keras.losses.categorical_crossentropy(cls_y, logits[:, 5:], from_logits=True)
+            is_defect_y = y[0]
+            bbox_y = y[1]
+            cls_y = y[2]
+            non_zero_ind = tf.squeeze(tf.where(tf.equal(tf.reduce_sum(is_defect_y, 1), 1)))
+            bbox_y = tf.gather(bbox_y, non_zero_ind)
+            logits[1] = tf.gather(logits[1], non_zero_ind)
+            loss_is_defect = tf.reduce_mean(tf.keras.losses.binary_crossentropy(is_defect_y, logits[0]))
+            loss_bbox = self._loss(bbox_y, logits[1])
+            loss_cls = tf.reduce_mean(tf.keras.losses.categorical_crossentropy(cls_y, logits[2]))
             loss_value = tf.reduce_mean([loss_is_defect, loss_bbox, loss_cls])
 
         grads = tape.gradient(loss_value, self.model.trainable_weights)
         self._optimizer.apply_gradients(zip(grads, self.model.trainable_weights))
-        self._train_metrics[0].update_state(cls_y, logits[:, 5:])
-        self._train_metrics[1].update_state(is_defect_y, logits[:, :1])
-        return loss_value, tf.reduce_mean(loss_bbox, axis=-1)
+        self._train_metrics[0].update_state(cls_y, logits[2])
+        self._train_metrics[1].update_state(is_defect_y, logits[0])
+        return loss_value, loss_bbox
 
     @tf.function
     def test_step(self, x, y):
         val_logits = self.model(x, training=False)
-        is_defect_y = y[:, :1]
-        cls_y = y[:, 5:]
-        self._val_metrics[0].update_state(cls_y, val_logits[:, 5:])
-        self._val_metrics[1].update_state(is_defect_y, val_logits[:, :1])
+        is_defect_y = y[0]
+        cls_y = y[2]
+        self._val_metrics[0].update_state(cls_y, val_logits[2])
+        self._val_metrics[1].update_state(is_defect_y, val_logits[0])
 
     def training_loop(self, train_ds, test_ds):
         for epoch in range(self.epoch):
@@ -45,16 +48,16 @@ class ModelTrainer:
             start_time = time.time()
 
             # Iterate over the batches of the dataset.
-            for step, (x_batch_train, y_batch_train) in enumerate(train_ds):
+            for step, (x_batch_train, *y_batch_train) in enumerate(train_ds):
                 loss_value, loss_bbox = self.train_step(x_batch_train, y_batch_train)
 
                 # Log every 200 batches.
-                if step % 200 == 0:
+                if step % 50 == 0:
                     print(
                         "Training loss and bounding box loss(for one batch) at step %d: %.4f %.4f"
                         % (step, float(loss_value), float(loss_bbox))
                     )
-                    print("Seen so far: %d samples" % ((step + 1) * 64))
+                    print("Seen so far: %d samples" % ((step + 1) * 32))
 
             # Display metrics at the end of each epoch.
             train_cls_acc = self._train_metrics[0].result()
@@ -68,7 +71,7 @@ class ModelTrainer:
             self._train_metrics[1].reset_states()
 
             # Run a validation loop at the end of each epoch.
-            for x_batch_val, y_batch_val in test_ds:
+            for x_batch_val, *y_batch_val in test_ds:
                 self.test_step(x_batch_val, y_batch_val)
 
             val_cls_acc = self._val_metrics[0].result()
