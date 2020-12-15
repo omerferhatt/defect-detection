@@ -13,11 +13,12 @@ if __name__ == '__main__':
     # trainer.set_metrics(tf.keras.metrics.CategoricalAccuracy(), tf.keras.metrics.BinaryAccuracy())
     # trainer.training_loop(train_ds, test_ds)
     defect_cls.model.compile(
-        optimizer='sgd',
+        optimizer='rmsprop',
         loss={
             'is_def': tf.keras.losses.BinaryCrossentropy(),
             'cls': tf.keras.losses.CategoricalCrossentropy(),
             'bbox': NonZeroEllipticBBoxLoss()},
+        loss_weights=[1, 1, 2],
         metrics={
             'is_def': tf.keras.metrics.BinaryAccuracy(),
             'cls': tf.keras.metrics.CategoricalAccuracy()},

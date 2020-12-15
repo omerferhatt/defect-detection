@@ -16,24 +16,24 @@ class DefectLocalizeModel:
         self._model = self.get_model()
 
     def get_model(self):
-        x = GlobalAvgPool2D()(self.backbone.output)
-        x = BatchNormalization()(x)
+        x_1 = GlobalAvgPool2D()(self.backbone.output)
+        x = BatchNormalization()(x_1)
         x = Dense(256)(x)
         x = BatchNormalization()(x)
-        x = ReLU()(x)
-        x = Dropout(0.2)(x)
+        x_2 = ReLU()(x)
+        x = Dropout(0.2)(x_2)
         x = Dense(64)(x)
         x = BatchNormalization()(x)
-        x_1 = ReLU()(x)
+        x_3 = ReLU()(x)
 
-        x = Dropout(0.2)(x_1)
+        x = Dropout(0.2)(x_3)
         x_out_1 = Dense(1, activation='sigmoid', name='is_def')(x)
 
-        x = Dropout(0.2)(x_1)
+        x = Dropout(0.2)(x_3)
         x_out_2 = Dense(3, activation='softmax', name='cls')(x)
 
-        x = Dropout(0.2)(x_1)
-        x_out_3 = Dense(5, activation='linear', name='bbox')(x)
+        x = Dropout(0.2)(x_2)
+        x_out_3 = Dense(5, activation='sigmoid', name='bbox')(x)
 
         return Model(inputs=self.backbone.input, outputs=[x_out_1, x_out_3, x_out_2])
 
