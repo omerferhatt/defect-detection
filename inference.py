@@ -23,10 +23,10 @@ def test_model(model, test_ds, select_im=1):
             fig, ax = plt.subplots(figsize=(12, 12))
             plt.imshow(img_arr, cmap='gray')
             # Creating un-filled ellipse on image
-            e = Ellipse(xy=(bbox_pred[3] * 512, bbox_pred[4] * 512), width=bbox_pred[0] * 256,
-                        height=bbox_pred[1] * 256,
+            e = Ellipse(xy=(bbox_pred[3] * 512, bbox_pred[4] * 512), width=bbox_pred[0] * 512,
+                        height=bbox_pred[1] * 512,
                         angle=((bbox_pred[2] * 2 * np.pi - np.pi) * 180 / np.pi), edgecolor='b', lw=2, facecolor='none')
-            e_org = Ellipse(xy=(bbox[3] * 512, bbox[4] * 512), width=bbox[0] * 256, height=bbox[1] * 256,
+            e_org = Ellipse(xy=(bbox[3] * 512, bbox[4] * 512), width=bbox[0] * 512, height=bbox[1] * 512,
                             angle=((bbox[2] * 2 * np.pi - np.pi) * 180 / np.pi), edgecolor='r', lw=2, facecolor='none')
             # Adding some transparency
             e.set_alpha(0.8)

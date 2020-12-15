@@ -16,8 +16,8 @@ def normalize_defected(df: pd.DataFrame, img_height=512, img_width=512, angle_ma
     :return: Normalized dataframe
     """
     # Normalizing semi axes with half of image shape
-    df['semi_major'] /= img_height / 2
-    df['semi_minor'] /= img_width / 2
+    df['semi_major'] /= img_height
+    df['semi_minor'] /= img_width
     # Normalizing center points wit image shape
     df['x_to_center'] /= img_width
     df['y_to_center'] /= img_height
@@ -86,6 +86,9 @@ class DatasetDataframe:
             class_root_path = os.path.join(self.data_root_path, file.split('.')[0].split('/')[1])
             # Reading *.txt file as csv and removing false rows at the end
             df = pd.read_csv(file, sep='\t', header=None, index_col=0).iloc[:-1]
+            # Sorting semi axis lengths, semi major axis has to be longer then minor one
+            semi_vals = df.iloc[:, :2].values
+            df.iloc[:, :2] = np.array([(y, x) if x < y else (x, y) for x, y in semi_vals])
             # Renaming column names
             df.columns = self.col_dict['old_cols']
             # Creating class define column

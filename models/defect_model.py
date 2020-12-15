@@ -27,13 +27,13 @@ class DefectLocalizeModel:
         x_1 = ReLU()(x)
 
         x = Dropout(0.2)(x_1)
-        x_out_1 = Dense(1, activation='sigmoid')(x)
+        x_out_1 = Dense(1, activation='sigmoid', name='is_def')(x)
 
         x = Dropout(0.2)(x_1)
-        x_out_2 = Dense(3, activation='softmax')(x)
+        x_out_2 = Dense(3, activation='softmax', name='cls')(x)
 
         x = Dropout(0.2)(x_1)
-        x_out_3 = Dense(5, activation='linear')(x)
+        x_out_3 = Dense(5, activation='linear', name='bbox')(x)
 
         return Model(inputs=self.backbone.input, outputs=[x_out_1, x_out_3, x_out_2])
 

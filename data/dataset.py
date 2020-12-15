@@ -43,7 +43,7 @@ class Dataset:
         bbox = tf.stack(bbox, axis=-1)
         # target_label = tf.concat([is_defect, bbox, class_labels], axis=-1)
         img = tf.image.resize(img, size=(224, 224))
-        return img, is_defect, bbox, class_labels
+        return img, (is_defect, bbox, class_labels)
         # return img, target_label
 
     @property
