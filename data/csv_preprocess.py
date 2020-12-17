@@ -89,8 +89,8 @@ class DatasetDataframe:
             # Reading *.txt file as csv and removing false rows at the end
             df = pd.read_csv(file, sep='\t', header=None, index_col=0).iloc[:-1]
             # Sorting semi axis lengths, semi major axis has to be longer then minor one
-            semi_vals = df.iloc[:, :2].values
-            df.iloc[:, :2] = np.array([(y, x) if x < y else (x, y) for x, y in semi_vals])
+            semi_values = df.iloc[:, :2].values
+            df.iloc[:, :2] = np.array([(y, x) if x < y else (x, y) for x, y in semi_values])
             # Renaming column names
             df.columns = self.col_dict['old_cols']
             # Creating class define column

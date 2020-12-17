@@ -1,5 +1,7 @@
 import pathlib
 
+import albumentations as A
+import matplotlib.pyplot as plt
 import tensorflow as tf
 
 
@@ -16,6 +18,27 @@ class Dataset:
         self.__record_defaults = [str(), float(), float(), float(),
                                   float(), float(), float(), float(),
                                   float(), float()]
+        # Augmentation pipeline
+        self.transforms = A.Compose([
+            A.RandomBrightnessContrast(brightness_limit=0.3, contrast_limit=0.3, p=0.7),
+            A.RandomGamma(p=0.4),
+            A.ImageCompression(quality_lower=80, quality_upper=100, p=0.5),
+            A.Blur(blur_limit=3, p=0.2)
+        ])
+
+    def aug_func(self, image):
+        data = {"image": image}
+        aug_data = self.transforms(**data)
+        aug_img = aug_data["image"]
+        return aug_img
+
+    def aug_process(self, image, label):
+        aug_img = tf.numpy_function(func=self.aug_func, inp=[image], Tout=tf.float32)
+        return aug_img, label
+
+    def apply_augmentation(self, ds: tf.data.Dataset) -> tf.data.Dataset:
+        ds = ds.map(self.aug_process, num_parallel_calls=self.autotune)
+        return ds
 
     def configure_ds(self, ds: tf.data.Dataset, is_training: False) -> tf.data.Dataset:
         """Only training dataset needs cache and prefetching. Both dataset batched."""
@@ -103,13 +126,28 @@ def get_ds_pipeline(train_csv_path='data/csv/train.csv', test_csv_path='data/csv
     # Converts paths to images and concatenate all labels
     tr_ds = tr_ds.map(data.decode_ds, num_parallel_calls=data.autotune)
     te_ds = te_ds.map(data.decode_ds, num_parallel_calls=data.autotune)
+    # Data augmentation on training dataset
+    tr_ds = data.apply_augmentation(tr_ds)
     # Enables some cache and pre-fetch features
     tr_ds = data.configure_ds(tr_ds, is_training=True)
     te_ds = data.configure_ds(te_ds, is_training=True)
     return tr_ds, te_ds
 
 
+def visualize_images(image_list: list):
+    fig, axs = plt.subplots(ncols=len(image_list) // 2, nrows=2, figsize=(15, 10), dpi=400)
+    for idx, im in enumerate(image_list):
+        r = idx // 5
+        c = idx % 5
+        im = (im * 255).astype(int)
+        axs[r, c].imshow(im)
+    plt.show()
+
+
 if __name__ == '__main__':
     train_ds, test_ds = get_ds_pipeline()
-    for x, y in train_ds.take(1).as_numpy_iterator():
-        print(y[0])
+    img_list = []
+    for x, y in train_ds.unbatch().batch(1).take(10).as_numpy_iterator():
+        img_list.append(x[0])
+
+    visualize_images(img_list)

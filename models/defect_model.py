@@ -15,14 +15,17 @@ class DefectLocalizeModel:
         self._model = self.get_model()
 
     def get_model(self):
+        # Backbone GAP output
         x_1 = GlobalAvgPool2D()(self.backbone.output)
 
+        # FCN block - 1
         x = BatchNormalization()(self.backbone.output)
         x = Conv2D(32, (7, 7))(x)
         x = Dropout(0.2)(x)
         x = BatchNormalization()(x)
         y_1 = ReLU()(x)
 
+        # FCN block for bbox center point regression
         x = Conv2D(16, (1, 1))(x)
         x = Dropout(0.2)(x)
         x = BatchNormalization()(x)
@@ -30,10 +33,12 @@ class DefectLocalizeModel:
         x = Conv2D(2, (1, 1), activation='sigmoid')(x)
         x_out_4 = Flatten(name='bbox_center')(x)
 
+        # FCN block for for bbox parametric regression
         x = Conv2D(16, (1, 1))(y_1)
         x = Dropout(0.2)(x)
         x = BatchNormalization()(x)
         x = ReLU()(x)
+        # Information from center point concatenated
         x = Concatenate()([x, x_center])
         x = BatchNormalization()(x)
         x = Dropout(0.2)(x)
@@ -44,9 +49,11 @@ class DefectLocalizeModel:
         x = Conv2D(3, (1, 1), activation='sigmoid')(x)
         x_out_3 = Flatten(name='bbox_param')(x)
 
+        # Image classification node
         x = Dropout(0.5)(x_1)
         x_out_2 = Dense(3, activation='softmax', name='cls')(x)
 
+        # Is defected classification node
         x = Dropout(0.5)(x_1)
         x = Concatenate()([x, x_out_2])
         x_out_1 = Dense(1, activation='sigmoid', name='is_def')(x)
