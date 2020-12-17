@@ -3,34 +3,45 @@ import numpy as np
 from PIL import Image
 from matplotlib.patches import Ellipse
 
+select_im = 23
+
 
 def test_model(model, test_ds, select_im=1):
     for idx, (x, y) in enumerate(test_ds.unbatch().take(select_im).as_numpy_iterator()):
         if idx == select_im - 1:
             img = x
-            class_type = y[6:]
-            is_defect = y[:1]
-            bbox = y[1:6]
-            print(class_type)
-            print(is_defect)
-            print(bbox)
-            img_arr = np.array(img, dtype=np.uint8)
-            y_pred = model.predict(img)
-            bbox_pred = np.array(y_pred[1:6])
-            img_arr = Image.fromarray(img_arr)
+            class_type = y[3]
+            is_defect = y[0]
+            bbox_param = y[1]
+            bbox_center = y[2]
+            img_arr = np.array(img)[np.newaxis, :, :, :]
+            y_pred = model.predict(img_arr)
+            img_arr = (img_arr * 255).astype(np.uint8)
+            class_type_pred = y_pred[3]
+            is_defect_pred = y_pred[0]
+            bbox_param_pred = np.squeeze(y_pred[1])
+            bbox_center_pred = np.squeeze(y_pred[2])
+            img_arr = Image.fromarray(img_arr[0])
             img_arr = img_arr.resize((512, 512))
+            print(f'Is defected: \tGT vs Prediction | {is_defect} - {is_defect_pred.squeeze()}')
+            print(f'Class type:  \tGT vs Prediction | {np.argmax(class_type)} - {np.argmax(class_type_pred.squeeze())}')
+            print(f'Bbox center: \tGT vs Prediction | {bbox_center} - {bbox_center_pred}')
+            print(f'Bbox params: \tGT vs Prediction | {bbox_param} - {bbox_param_pred}')
+            print(f'Bbox center  \tL2 Distance      | {np.mean((bbox_center - bbox_center_pred) ** 2)}')
             # Plot configuration
             fig, ax = plt.subplots(figsize=(12, 12))
             plt.imshow(img_arr, cmap='gray')
             # Creating un-filled ellipse on image
-            e = Ellipse(xy=(bbox_pred[3] * 512, bbox_pred[4] * 512), width=bbox_pred[0] * 512,
-                        height=bbox_pred[1] * 512,
-                        angle=((bbox_pred[2] * 2 * np.pi - np.pi) * 180 / np.pi), edgecolor='b', lw=2, facecolor='none')
-            e_org = Ellipse(xy=(bbox[3] * 512, bbox[4] * 512), width=bbox[0] * 512, height=bbox[1] * 512,
-                            angle=((bbox[2] * 2 * np.pi - np.pi) * 180 / np.pi), edgecolor='r', lw=2, facecolor='none')
-            # Adding some transparency
-            e.set_alpha(0.8)
-            e_org.set_alpha(0.8)
-            ax.add_artist(e)
-            ax.add_artist(e_org)
+            if is_defect > 0.5:
+                e = Ellipse(xy=(bbox_center_pred * 512), width=bbox_param_pred[0] * 256,
+                            height=bbox_param_pred[1] * 256,
+                            angle=((bbox_param_pred[2] * 2 * np.pi - np.pi) * 180 / np.pi), edgecolor='b', lw=2,
+                            facecolor='none')
+                e.set_alpha(0.8)
+                ax.add_artist(e)
+                e_org = Ellipse(xy=(bbox_center * 512), width=bbox_param[0] * 256, height=bbox_param[1] * 256,
+                                angle=((bbox_param[2] * 2 * np.pi - np.pi) * 180 / np.pi), edgecolor='r', lw=2,
+                                facecolor='none')
+                e_org.set_alpha(0.8)
+                ax.add_artist(e_org)
             plt.show()

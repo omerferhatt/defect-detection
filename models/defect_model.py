@@ -1,41 +1,57 @@
 import tensorflow as tf
 from tensorflow.keras.layers import BatchNormalization, Dropout
-from tensorflow.keras.layers import Dense
+from tensorflow.keras.layers import Dense, Conv2D, Flatten, Concatenate
 from tensorflow.keras.layers import GlobalAvgPool2D
 from tensorflow.keras.layers import ReLU
 from tensorflow.keras.models import Model
 
 
 class DefectLocalizeModel:
-    def __init__(self, backbone: tf.keras.Model, num_output=9, input_shape=(224, 224, 3), weights='imagenet'):
+    def __init__(self, backbone: tf.keras.Model, input_shape=(224, 224, 3), weights='imagenet'):
         self.weights = weights
         self.input_shape = input_shape
-        self.num_output = num_output
         self.backbone = backbone(input_shape=self.input_shape, include_top=False, weights=self.weights)
         self.backbone.trainable = False
         self._model = self.get_model()
 
     def get_model(self):
         x_1 = GlobalAvgPool2D()(self.backbone.output)
-        x = BatchNormalization()(x_1)
-        x = Dense(256)(x)
-        x = BatchNormalization()(x)
-        x_2 = ReLU()(x)
-        x = Dropout(0.2)(x_2)
-        x = Dense(64)(x)
-        x = BatchNormalization()(x)
-        x_3 = ReLU()(x)
 
-        x = Dropout(0.2)(x_3)
-        x_out_1 = Dense(1, activation='sigmoid', name='is_def')(x)
+        x = BatchNormalization()(self.backbone.output)
+        x = Conv2D(32, (7, 7))(x)
+        x = Dropout(0.2)(x)
+        x = BatchNormalization()(x)
+        y_1 = ReLU()(x)
 
-        x = Dropout(0.2)(x_3)
+        x = Conv2D(16, (1, 1))(x)
+        x = Dropout(0.2)(x)
+        x = BatchNormalization()(x)
+        x_center = ReLU()(x)
+        x = Conv2D(2, (1, 1), activation='sigmoid')(x)
+        x_out_4 = Flatten(name='bbox_center')(x)
+
+        x = Conv2D(16, (1, 1))(y_1)
+        x = Dropout(0.2)(x)
+        x = BatchNormalization()(x)
+        x = ReLU()(x)
+        x = Concatenate()([x, x_center])
+        x = BatchNormalization()(x)
+        x = Dropout(0.2)(x)
+        x = Conv2D(16, (1, 1))(x)
+        x = Dropout(0.2)(x)
+        x = BatchNormalization()(x)
+        x = ReLU()(x)
+        x = Conv2D(3, (1, 1), activation='sigmoid')(x)
+        x_out_3 = Flatten(name='bbox_param')(x)
+
+        x = Dropout(0.5)(x_1)
         x_out_2 = Dense(3, activation='softmax', name='cls')(x)
 
-        x = Dropout(0.2)(x_2)
-        x_out_3 = Dense(5, activation='sigmoid', name='bbox')(x)
+        x = Dropout(0.5)(x_1)
+        x = Concatenate()([x, x_out_2])
+        x_out_1 = Dense(1, activation='sigmoid', name='is_def')(x)
 
-        return Model(inputs=self.backbone.input, outputs=[x_out_1, x_out_3, x_out_2])
+        return Model(inputs=self.backbone.input, outputs=[x_out_1, x_out_2, x_out_3, x_out_4])
 
     @property
     def model(self):

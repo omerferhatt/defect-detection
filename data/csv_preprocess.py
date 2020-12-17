@@ -16,8 +16,8 @@ def normalize_defected(df: pd.DataFrame, img_height=512, img_width=512, angle_ma
     :return: Normalized dataframe
     """
     # Normalizing semi axes with half of image shape
-    df['semi_major'] /= img_height
-    df['semi_minor'] /= img_width
+    df['semi_major'] /= (img_height / 2)
+    df['semi_minor'] /= (img_width / 2)
     # Normalizing center points wit image shape
     df['x_to_center'] /= img_width
     df['y_to_center'] /= img_height
@@ -60,9 +60,11 @@ class DatasetDataframe:
         :param random_seed: Random seed for shuffling dataset
         :param shuffle: Shuffles dataset if set True
         """
+        # Attributes
         self.random_seed = random_seed
         self.shuffle = shuffle
         self.data_root_path = data_root_path
+        # Column names
         self.col_dict = {
             'old_cols': ['semi_major', 'semi_minor', 'rot_angle', 'x_to_center', 'y_to_center'],
             'new_cols': ['path', 'class', 'is_defected', 'is_test'],
@@ -138,14 +140,14 @@ class DatasetDataframe:
             # Creating file path column
             paths = sorted(glob.glob(os.path.join(class_root_folder, '*.png')))
             # Limiting normal dataset with 200 images to not to bias model so much
-            paths = paths[:200]
+            paths = paths[:150]
             path_col = pd.Series(paths)
             # Creating class define column
             class_col = pd.Series([class_id + 1] * len(paths))
             # Creating test column to choose which data will be tested after training
             # First 150 sample will be used for training, the rest for testing
-            is_test = np.arange(0, 200)
-            is_test[is_test < 150] = 0
+            is_test = np.arange(0, 150)
+            is_test[is_test < 120] = 0
             is_test[is_test != 0] = 1
             is_test_col = pd.Series(is_test)
             # Creating defect column to classify easier while training
