@@ -5,6 +5,7 @@ from datetime import datetime
 import tensorflow as tf
 
 from data.dataset import get_ds_pipeline
+from inference import test_single_image
 from models.defect_model import DefectLocalizeModel
 from utils.losses import NonZeroMSELoss, NonZeroL2Loss
 
@@ -38,6 +39,33 @@ def main():
                                             batch_size=arg.batch_size)
         defect_cls = DefectLocalizeModel(backbone=tf.keras.applications.DenseNet169)
         defect_cls.model.summary()
+
+        if not os.path.exists(arg.log_dir):
+            os.mkdir(arg.log_dir)
+        now = datetime.now()
+        date_time = now.strftime("%H_%M_%m_%d")
+
+        callbacks = [tf.keras.callbacks.EarlyStopping(patience=10),
+                     tf.keras.callbacks.ReduceLROnPlateau(patience=4, factor=0.4, verbose=1)]
+
+        if arg.save_checkpoint:
+            checkpoint_dir = os.path.join(arg.log_dir, date_time, 'checkpoint.ckpt')
+            callbacks.append(
+                tf.keras.callbacks.ModelCheckpoint(
+                    checkpoint_dir,
+                    save_weights_only=True,
+                    verbose=1,
+                    save_best_only=True
+                )
+            )
+            tensorboard_dir = os.path.join(arg.log_dir, date_time, 'tensorboard')
+            callbacks.append(
+                tf.keras.callbacks.TensorBoard(tensorboard_dir)
+            )
+
+        if arg.load_model is not None:
+            defect_cls.model.load(arg.load_model)
+
         defect_cls.model.compile(
             optimizer=tf.keras.optimizers.Adam(learning_rate=arg.learning_rate),
             loss={
@@ -51,27 +79,6 @@ def main():
             run_eagerly=True
         )
 
-        if not os.path.exists(arg.log_dir):
-            os.mkdir(arg.log_dir)
-        now = datetime.now()
-        date_time = now.strftime("%H_%M_%m_%d")
-
-        callbacks = [tf.keras.callbacks.EarlyStopping(patience=10),
-                     tf.keras.callbacks.ReduceLROnPlateau(patience=4, factor=0.4, verbose=1)]
-
-        if arg.save_checkpoint:
-            checkpoint_dir = os.path.join(arg.log_dir, date_time, 'checkpoint')
-            callbacks.append(
-                tf.keras.callbacks.ModelCheckpoint(checkpoint_dir, verbose=1, save_best_only=True)
-            )
-            tensorboard_dir = os.path.join(arg.log_dir, date_time, 'tensorboard')
-            callbacks.append(
-                tf.keras.callbacks.TensorBoard(tensorboard_dir)
-            )
-
-        if arg.load_model is not None:
-            defect_cls.model.load_weights(arg.load_model)
-
         defect_cls.model.fit(
             train_ds,
             epochs=arg.epoch,
@@ -81,7 +88,10 @@ def main():
         )
 
     else:
-        pass
+        defect_cls = DefectLocalizeModel(backbone=tf.keras.applications.DenseNet169)
+        if arg.load_model is not None:
+            defect_cls.model.load(arg.load_model)
+            test_single_image(defect_cls.model, arg.test_image[0], arg.save_result)
 
 
 if __name__ == '__main__':
