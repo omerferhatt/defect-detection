@@ -21,22 +21,23 @@ class Dataset:
         # Augmentation pipeline
         self.transforms = A.Compose([
             A.RandomBrightnessContrast(brightness_limit=0.3, contrast_limit=0.3, p=0.7),
-            A.RandomGamma(p=0.4),
-            A.ImageCompression(quality_lower=80, quality_upper=100, p=0.5),
-            A.Blur(blur_limit=3, p=0.2)
+            A.RandomGamma(gamma_limit=(30, 170), p=0.5)
         ])
 
     def aug_func(self, image):
+        """Applies augmentation to the image"""
         data = {"image": image}
         aug_data = self.transforms(**data)
         aug_img = aug_data["image"]
         return aug_img
 
     def aug_process(self, image, label):
+        """Creates tensorflow function with related augmentation functions"""
         aug_img = tf.numpy_function(func=self.aug_func, inp=[image], Tout=tf.float32)
         return aug_img, label
 
     def apply_augmentation(self, ds: tf.data.Dataset) -> tf.data.Dataset:
+        """Creates parallelized tf.data.Dataset object"""
         ds = ds.map(self.aug_process, num_parallel_calls=self.autotune)
         return ds
 
@@ -135,6 +136,7 @@ def get_ds_pipeline(train_csv_path='data/csv/train.csv', test_csv_path='data/csv
 
 
 def visualize_images(image_list: list):
+    """Shows 10 sample augmented images"""
     fig, axs = plt.subplots(ncols=len(image_list) // 2, nrows=2, figsize=(15, 10), dpi=400)
     for idx, im in enumerate(image_list):
         r = idx // 5
