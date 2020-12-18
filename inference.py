@@ -49,15 +49,15 @@ def test_model(model, test_ds, select_im=1):
 
 
 def test_single_image(model: tf.keras.Model, path: str, save_result: bool):
-    img_pil = Image.open(path)
+    img_pil = Image.open(path).convert("RGB")
     img_pil_resized = img_pil.resize((224, 224))
     img = np.array(img_pil_resized, dtype=np.float32) / 255.
     img = img[np.newaxis, :, :, :]
     pred = model.predict(img)
     is_defect_pred = pred[0]
-    class_type_pred = pred[3]
-    bbox_param_pred = np.squeeze(pred[1])
-    bbox_center_pred = np.squeeze(pred[2])
+    class_type_pred = pred[1]
+    bbox_param_pred = np.squeeze(pred[2])
+    bbox_center_pred = np.squeeze(pred[3])
     print(f'Is defected: \tPrediction | {is_defect_pred.squeeze()}')
     print(f'Class type:  \tPrediction | {np.argmax(class_type_pred.squeeze())}')
     print(f'Bbox center: \tPrediction | {bbox_center_pred}')
@@ -66,13 +66,11 @@ def test_single_image(model: tf.keras.Model, path: str, save_result: bool):
     fig, ax = plt.subplots(figsize=(12, 12))
     plt.imshow(img_original, cmap='gray')
     # Creating un-filled ellipse on image
-    if is_defect_pred > 0.5:
-        e = Ellipse(xy=(bbox_center_pred * 512), width=bbox_param_pred[0] * 256,
-                    height=bbox_param_pred[1] * 256,
-                    angle=((bbox_param_pred[2] * 2 * np.pi - np.pi) * 180 / np.pi), edgecolor='b', lw=2,
-                    facecolor='none')
-        e.set_alpha(0.8)
-        ax.add_artist(e)
-        plt.show()
-        if save_result:
-            fig.savefig('result.png')
+    e = Ellipse(xy=(bbox_center_pred * 512), width=bbox_param_pred[0] * 256,
+                height=bbox_param_pred[1] * 256,
+                angle=((bbox_param_pred[2] * 2 * np.pi - np.pi) * 180 / np.pi), edgecolor='b', lw=2,
+                facecolor='none')
+    e.set_alpha(0.8)
+    ax.add_artist(e)
+    if save_result:
+        fig.savefig('result.png')

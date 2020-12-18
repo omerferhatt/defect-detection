@@ -26,7 +26,7 @@ def parse():
     # Inference parameters
     parser.add_argument('-i', '--inference', action='store_true')
     parser.add_argument('-r', '--real-time')
-    parser.add_argument('-T', '--test-image', nargs='?')
+    parser.add_argument('-T', '--test-image', nargs='+')
     parser.add_argument('-s', '--save-result', action='store_true')
 
     return parser.parse_args()
@@ -90,7 +90,7 @@ def main():
     else:
         defect_cls = DefectLocalizeModel(backbone=tf.keras.applications.DenseNet169)
         if arg.load_model is not None:
-            defect_cls.model.load(arg.load_model)
+            defect_cls.model.load_weights(arg.load_model).expect_partial()
             test_single_image(defect_cls.model, arg.test_image[0], arg.save_result)
 
 
