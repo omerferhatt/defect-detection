@@ -32,49 +32,56 @@ def parse():
 
 
 def main():
-    train_ds, test_ds = get_ds_pipeline(os.path.join(arg.csv_data, 'train.csv'),
-                                        os.path.join(arg.csv_data, 'test.csv'),
-                                        batch_size=arg.batch_size)
-    defect_cls = DefectLocalizeModel(backbone=tf.keras.applications.DenseNet169)
-    defect_cls.model.summary()
-    defect_cls.model.compile(
-        optimizer=tf.keras.optimizers.Adam(learning_rate=arg.learning_rate),
-        loss={
-            'is_def': tf.keras.losses.BinaryCrossentropy(),
-            'cls': tf.keras.losses.CategoricalCrossentropy(),
-            'bbox_param': NonZeroMSELoss(),
-            'bbox_center': NonZeroL2Loss()},
-        metrics={
-            'is_def': tf.keras.metrics.BinaryAccuracy(),
-            'cls': tf.keras.metrics.CategoricalAccuracy()},
-        run_eagerly=True
-    )
-
-    if not os.path.exists(arg.log_dir):
-        os.mkdir(arg.log_dir)
-    now = datetime.now()
-    date_time = now.strftime("%H_%M_%m_%d")
-
-    callbacks = [tf.keras.callbacks.EarlyStopping(patience=10),
-                 tf.keras.callbacks.ReduceLROnPlateau(patience=4, factor=0.4, verbose=1)]
-
-    if arg.save_checkpoint:
-        checkpoint_dir = os.path.join(arg.log_dir, date_time, 'checkpoint')
-        callbacks.append(
-            tf.keras.callbacks.ModelCheckpoint(checkpoint_dir, verbose=1, save_best_only=True)
-        )
-        tensorboard_dir = os.path.join(arg.log_dir, date_time, 'tensorboard')
-        callbacks.append(
-            tf.keras.callbacks.TensorBoard(tensorboard_dir)
+    if not arg.inference:
+        train_ds, test_ds = get_ds_pipeline(os.path.join(arg.csv_data, 'train.csv'),
+                                            os.path.join(arg.csv_data, 'test.csv'),
+                                            batch_size=arg.batch_size)
+        defect_cls = DefectLocalizeModel(backbone=tf.keras.applications.DenseNet169)
+        defect_cls.model.summary()
+        defect_cls.model.compile(
+            optimizer=tf.keras.optimizers.Adam(learning_rate=arg.learning_rate),
+            loss={
+                'is_def': tf.keras.losses.BinaryCrossentropy(),
+                'cls': tf.keras.losses.CategoricalCrossentropy(),
+                'bbox_param': NonZeroMSELoss(),
+                'bbox_center': NonZeroL2Loss()},
+            metrics={
+                'is_def': tf.keras.metrics.BinaryAccuracy(),
+                'cls': tf.keras.metrics.CategoricalAccuracy()},
+            run_eagerly=True
         )
 
-    defect_cls.model.fit(
-        train_ds,
-        epochs=arg.epoch,
-        validation_data=test_ds,
-        callbacks=callbacks,
-        verbose=1
-    )
+        if not os.path.exists(arg.log_dir):
+            os.mkdir(arg.log_dir)
+        now = datetime.now()
+        date_time = now.strftime("%H_%M_%m_%d")
+
+        callbacks = [tf.keras.callbacks.EarlyStopping(patience=10),
+                     tf.keras.callbacks.ReduceLROnPlateau(patience=4, factor=0.4, verbose=1)]
+
+        if arg.save_checkpoint:
+            checkpoint_dir = os.path.join(arg.log_dir, date_time, 'checkpoint')
+            callbacks.append(
+                tf.keras.callbacks.ModelCheckpoint(checkpoint_dir, verbose=1, save_best_only=True)
+            )
+            tensorboard_dir = os.path.join(arg.log_dir, date_time, 'tensorboard')
+            callbacks.append(
+                tf.keras.callbacks.TensorBoard(tensorboard_dir)
+            )
+
+        if arg.load_model is not None:
+            defect_cls.model.load_weights(arg.load_model)
+
+        defect_cls.model.fit(
+            train_ds,
+            epochs=arg.epoch,
+            validation_data=test_ds,
+            callbacks=callbacks,
+            verbose=1
+        )
+
+    else:
+        pass
 
 
 if __name__ == '__main__':
