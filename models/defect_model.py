@@ -8,9 +8,12 @@ from tensorflow.keras.models import Model
 
 class DefectLocalizeModel:
     def __init__(self, backbone: tf.keras.Model, input_shape=(224, 224, 3), weights='imagenet'):
+        # Attributes
         self.weights = weights
         self.input_shape = input_shape
+        # Get backbone
         self.backbone = backbone(input_shape=self.input_shape, include_top=False, weights=self.weights)
+        # Freeze all layers of backbone
         self.backbone.trainable = False
         self._model = self.get_model()
 
@@ -26,11 +29,11 @@ class DefectLocalizeModel:
         y_1 = ReLU()(x)
 
         # FCN block for bbox center point regression
-        x = Conv2D(16, (1, 1))(x)
+        x = Conv2D(16, (1, 1))(y_1)
         x = Dropout(0.2)(x)
         x = BatchNormalization()(x)
         x_center = ReLU()(x)
-        x = Conv2D(2, (1, 1), activation='sigmoid')(x)
+        x = Conv2D(2, (1, 1), activation='sigmoid')(x_center)
         x_out_4 = Flatten(name='bbox_center')(x)
 
         # FCN block for for bbox parametric regression
@@ -58,7 +61,7 @@ class DefectLocalizeModel:
         x = Concatenate()([x, x_out_2])
         x_out_1 = Dense(1, activation='sigmoid', name='is_def')(x)
 
-        return Model(inputs=self.backbone.input, outputs=[x_out_1, x_out_2, x_out_3, x_out_4])
+        return Model(inputs=self.backbone.input, outputs=[x_out_1, x_out_2, x_out_3, x_out_4], name='defect_model')
 
     @property
     def model(self):

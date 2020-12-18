@@ -1,7 +1,9 @@
 import argparse
 import os
+import time
 from datetime import datetime
 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import tensorflow as tf
 
 from data.dataset import get_ds_pipeline
@@ -33,21 +35,26 @@ def parse():
 
 
 def main():
+    # Training phase
     if not arg.inference:
+        # Get dataset pipeline
         train_ds, test_ds = get_ds_pipeline(os.path.join(arg.csv_data, 'train.csv'),
                                             os.path.join(arg.csv_data, 'test.csv'),
                                             batch_size=arg.batch_size)
         defect_cls = DefectLocalizeModel(backbone=tf.keras.applications.DenseNet169)
+        # Print model
         defect_cls.model.summary()
-
+        # Create log dir
         if not os.path.exists(arg.log_dir):
             os.mkdir(arg.log_dir)
+        # Get date-time for saving
         now = datetime.now()
         date_time = now.strftime("%H_%M_%m_%d")
-
+        # Callbacks for training session
         callbacks = [tf.keras.callbacks.EarlyStopping(patience=10),
                      tf.keras.callbacks.ReduceLROnPlateau(patience=4, factor=0.4, verbose=1)]
 
+        # If specified, checkpoint callback will be created
         if arg.save_checkpoint:
             checkpoint_dir = os.path.join(arg.log_dir, date_time, 'checkpoint.ckpt')
             callbacks.append(
@@ -62,10 +69,12 @@ def main():
             callbacks.append(
                 tf.keras.callbacks.TensorBoard(tensorboard_dir)
             )
-
+        # If specified, loads checkpoint from disk
         if arg.load_model is not None:
             defect_cls.model.load(arg.load_model)
 
+        # Compile model and build graph
+        # Eager execution is necessary for custom loss
         defect_cls.model.compile(
             optimizer=tf.keras.optimizers.Adam(learning_rate=arg.learning_rate),
             loss={
@@ -79,6 +88,7 @@ def main():
             run_eagerly=True
         )
 
+        # Training
         defect_cls.model.fit(
             train_ds,
             epochs=arg.epoch,
@@ -87,10 +97,29 @@ def main():
             verbose=1
         )
 
+    # Inference phase
     else:
+        # Create model object
+        t = time.time()
+        print('Creating model!')
         defect_cls = DefectLocalizeModel(backbone=tf.keras.applications.DenseNet169)
+        tf.keras.utils.plot_model(
+            defect_cls.model,
+            to_file="model.png",
+            show_shapes=True,
+            show_layer_names=True,
+            rankdir="TB",
+            expand_nested=False,
+            dpi=192,
+        )
+        print(f'Model created {time.time() - t:.5f} second\n')
         if arg.load_model is not None:
+            # Load weights
+            t = time.time()
+            print('Weight load started!')
             defect_cls.model.load_weights(arg.load_model).expect_partial()
+            print(f'Weight load: {time.time() - t:.5f} second\n')
+            # Test image on model
             test_single_image(defect_cls.model, arg.test_image[0], arg.save_result)
 
 
