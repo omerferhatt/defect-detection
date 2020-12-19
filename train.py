@@ -23,7 +23,7 @@ def parse():
     # Training parameters
     parser.add_argument('-l', '--learning-rate', type=float, default=1e-3)
     parser.add_argument('-e', '--epoch', type=int, default=20)
-    parser.add_argument('-b', '--batch-size', type=int, default=32)
+    parser.add_argument('-b', '--batch-size', type=int, default=64)
     parser.add_argument('-C', '--save-checkpoint', action='store_true')
     # Inference parameters
     parser.add_argument('-i', '--inference', action='store_true')
@@ -52,7 +52,7 @@ def main():
         date_time = now.strftime("%H_%M_%m_%d")
         # Callbacks for training session
         callbacks = [tf.keras.callbacks.EarlyStopping(patience=12),
-                     tf.keras.callbacks.ReduceLROnPlateau(patience=5, factor=0.2, verbose=1)]
+                     tf.keras.callbacks.ReduceLROnPlateau(patience=4, factor=0.4, verbose=1)]
 
         # If specified, checkpoint callback will be created
         if arg.save_checkpoint:
@@ -78,11 +78,11 @@ def main():
         defect_cls.model.compile(
             optimizer=tf.keras.optimizers.Adam(learning_rate=arg.learning_rate),
             loss={
-                'is_def': tf.keras.losses.BinaryCrossentropy(),
-                'cls': tf.keras.losses.CategoricalCrossentropy(),
+                'is_def': tf.keras.losses.BinaryCrossentropy(label_smoothing=0.2),
+                'cls': tf.keras.losses.CategoricalCrossentropy(label_smoothing=0.2),
                 'bbox_param': NonZeroMSELoss(),
                 'bbox_center': NonZeroL2Loss()},
-            loss_weights=[1.2, 0.60, 0.80, 1],
+            loss_weights=[1.3, 0.80, 0.80, 1],
             metrics={
                 'is_def': tf.keras.metrics.BinaryAccuracy(),
                 'cls': tf.keras.metrics.CategoricalAccuracy()},

@@ -125,7 +125,7 @@ Project folder structure is shown below:
 - `--load-model` : Path to checkpoint file to load model, trains from scratch if it's not specified
 - `--learning-rate` : Set learning rate, default is `1e-3`
 - `--epoch` : Set epoch for training, default is `20`
-- `--batch-size` : Set batch size for data pipeline, default is `32`
+- `--batch-size` : Set batch size for data pipeline, default is `64`
 - `--save-checkpoint` : Saves checkpoint to `--log` directory with date-time
 - `--inference` : Activates inference mode, `--load-model` param is required for that
 - `--real-time` : Not added yet
