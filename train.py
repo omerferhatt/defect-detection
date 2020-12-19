@@ -23,7 +23,7 @@ def parse():
     # Training parameters
     parser.add_argument('-l', '--learning-rate', type=float, default=1e-3)
     parser.add_argument('-e', '--epoch', type=int, default=20)
-    parser.add_argument('-b', '--batch-size', type=int, default=64)
+    parser.add_argument('-b', '--batch-size', type=int, default=32)
     parser.add_argument('-C', '--save-checkpoint', action='store_true')
     # Inference parameters
     parser.add_argument('-i', '--inference', action='store_true')
@@ -82,7 +82,6 @@ def main():
                 'cls': tf.keras.losses.CategoricalCrossentropy(label_smoothing=0.2),
                 'bbox_param': NonZeroMSELoss(),
                 'bbox_center': NonZeroL2Loss()},
-            loss_weights=[1.3, 0.80, 0.80, 1],
             metrics={
                 'is_def': tf.keras.metrics.BinaryAccuracy(),
                 'cls': tf.keras.metrics.CategoricalAccuracy()},
