@@ -91,7 +91,7 @@ def test_single_image(model: tf.keras.Model, path: str, save_result: bool):
     bbox_center_pred = np.squeeze(pred[3])
     # Printing logs
     print(f'Is defected: \tPrediction | {is_defect_pred.squeeze()}')
-    print(f'Class type:  \tPrediction | {np.argmax(class_type_pred.squeeze())}')
+    print(f'Class type:  \tPrediction | {np.argmax(class_type_pred.squeeze()) + 1}')
     print(f'Bbox center: \tPrediction | {bbox_center_pred}')
     print(f'Bbox params: \tPrediction | {bbox_param_pred}')
     img_original = np.array(img_pil, dtype=np.uint8)

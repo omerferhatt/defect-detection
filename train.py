@@ -79,7 +79,7 @@ def main():
             optimizer=tf.keras.optimizers.Adam(learning_rate=arg.learning_rate),
             loss={
                 'is_def': tf.keras.losses.BinaryCrossentropy(label_smoothing=0.2),
-                'cls': tf.keras.losses.CategoricalCrossentropy(label_smoothing=0.2),
+                'cls': tf.keras.losses.CategoricalCrossentropy(label_smoothing=0.1),
                 'bbox_param': NonZeroMSELoss(),
                 'bbox_center': NonZeroL2Loss()},
             metrics={
