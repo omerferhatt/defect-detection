@@ -98,13 +98,14 @@ Project folder structure is shown below:
 * Train model 100 epoch from scratch. Set learning rate to 0.01
 
 
-    $ python3 train.py --save-checkpoint --epoch 100 --learning-rate 1e-2
+        $ python3 train.py --save-checkpoint --epoch 100 --learning-rate 1e-2
 
 
 * Use checkpoint to continue training
 
     
-    $ python3 train.py --load-model logs/[checkpoint-dir]/checkpoint.ckpt --save-checkpoint --epoch 30
+   
+        $ python3 train.py --load-model logs/[checkpoint-dir]/checkpoint.ckpt --save-checkpoint --epoch 30
 
 
 ### How to inference with CLI
@@ -112,7 +113,7 @@ Project folder structure is shown below:
 * Inference on test images
 
 
-    $python3 train.py --inference --load-model logs/[checkpoint-dir]/checkpoint.ckpt --test-image data/test_data/class1_def_2.png --save-result
+        $python3 train.py --inference --load-model logs/[checkpoint-dir]/checkpoint.ckpt --test-image data/test_data/class1_def_2.png --save-result
 
 
 ### Other parameters
