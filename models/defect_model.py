@@ -1,6 +1,6 @@
 import tensorflow as tf
 from tensorflow.keras.layers import BatchNormalization, Dropout
-from tensorflow.keras.layers import Dense, Conv2D, Flatten, Concatenate
+from tensorflow.keras.layers import Dense, Conv2D, Flatten, Concatenate, Add
 from tensorflow.keras.layers import GlobalAvgPool2D
 from tensorflow.keras.layers import ReLU
 from tensorflow.keras.models import Model
@@ -20,10 +20,9 @@ class DefectLocalizeModel:
     def get_model(self):
         # Backbone GAP output
         x_1 = GlobalAvgPool2D()(self.backbone.output)
-
         # FCN block - 1
         x = BatchNormalization()(self.backbone.output)
-        x = Conv2D(32, (7, 7))(x)
+        x = Conv2D(64, (7, 7))(x)
         x = BatchNormalization()(x)
         y_1 = ReLU()(x)
 
@@ -31,6 +30,7 @@ class DefectLocalizeModel:
         x = Conv2D(32, (1, 1))(y_1)
         x = BatchNormalization()(x)
         x_center = ReLU()(x)
+        x_center_to_is_def = Flatten()(x_center)
         x = Conv2D(2, (1, 1), activation='sigmoid')(x_center)
         x_out_4 = Flatten(name='bbox_center')(x)
 
@@ -38,6 +38,7 @@ class DefectLocalizeModel:
         x = Conv2D(32, (1, 1))(y_1)
         x = BatchNormalization()(x)
         x = ReLU()(x)
+        x_param_to_is_def = Flatten()(x)
         # Information from center point concatenated
         x = Concatenate()([x, x_center])
         x = BatchNormalization()(x)
@@ -52,8 +53,9 @@ class DefectLocalizeModel:
         x_out_2 = Dense(3, activation='softmax', name='cls')(x)
 
         # Is defected classification node
-        x = Dropout(0.5)(x_1)
-        x = Concatenate()([x, x_out_2])
+        x_drop = Dropout(0.5)(x_1)
+        x_add = Add()([x_center_to_is_def, x_param_to_is_def])
+        x = Concatenate()([x_drop, x_out_2, x_add])
         x_out_1 = Dense(1, activation='sigmoid', name='is_def')(x)
 
         return Model(inputs=self.backbone.input, outputs=[x_out_1, x_out_2, x_out_3, x_out_4], name='defect_model')

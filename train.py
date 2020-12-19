@@ -51,8 +51,8 @@ def main():
         now = datetime.now()
         date_time = now.strftime("%H_%M_%m_%d")
         # Callbacks for training session
-        callbacks = [tf.keras.callbacks.EarlyStopping(patience=12),
-                     tf.keras.callbacks.ReduceLROnPlateau(patience=4, factor=0.4, verbose=1)]
+        callbacks = [tf.keras.callbacks.EarlyStopping(patience=10),
+                     tf.keras.callbacks.ReduceLROnPlateau(patience=5, factor=0.1, verbose=1, cooldown=3, min_lr=1e-5)]
 
         # If specified, checkpoint callback will be created
         if arg.save_checkpoint:

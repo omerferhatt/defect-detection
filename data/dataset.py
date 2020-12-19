@@ -20,8 +20,8 @@ class Dataset:
                                   float(), float()]
         # Augmentation pipeline
         self.transforms = A.Compose([
-            A.RandomBrightnessContrast(brightness_limit=0.3, contrast_limit=0.3, p=0.7),
-            A.RandomGamma(gamma_limit=(30, 170), p=0.5)
+            A.RandomBrightnessContrast(brightness_limit=0.25, contrast_limit=0.25, p=0.75),
+            A.RandomGamma(gamma_limit=(50, 150), p=0.5)
         ])
 
     def aug_func(self, image):
