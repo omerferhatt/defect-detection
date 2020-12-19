@@ -43,7 +43,7 @@ def main():
                                             batch_size=arg.batch_size)
         defect_cls = DefectLocalizeModel(backbone=tf.keras.applications.DenseNet169)
         # Print model
-        defect_cls.model.summary()
+        # defect_cls.model.summary()
         # Create log dir
         if not os.path.exists(arg.log_dir):
             os.mkdir(arg.log_dir)
@@ -51,8 +51,8 @@ def main():
         now = datetime.now()
         date_time = now.strftime("%H_%M_%m_%d")
         # Callbacks for training session
-        callbacks = [tf.keras.callbacks.EarlyStopping(patience=10),
-                     tf.keras.callbacks.ReduceLROnPlateau(patience=4, factor=0.4, verbose=1)]
+        callbacks = [tf.keras.callbacks.EarlyStopping(patience=12),
+                     tf.keras.callbacks.ReduceLROnPlateau(patience=5, factor=0.2, verbose=1)]
 
         # If specified, checkpoint callback will be created
         if arg.save_checkpoint:
@@ -71,7 +71,7 @@ def main():
             )
         # If specified, loads checkpoint from disk
         if arg.load_model is not None:
-            defect_cls.model.load(arg.load_model)
+            defect_cls.model.load_weights(arg.load_model)
 
         # Compile model and build graph
         # Eager execution is necessary for custom loss
@@ -82,6 +82,7 @@ def main():
                 'cls': tf.keras.losses.CategoricalCrossentropy(),
                 'bbox_param': NonZeroMSELoss(),
                 'bbox_center': NonZeroL2Loss()},
+            loss_weights=[1.2, 0.60, 0.80, 1],
             metrics={
                 'is_def': tf.keras.metrics.BinaryAccuracy(),
                 'cls': tf.keras.metrics.CategoricalAccuracy()},

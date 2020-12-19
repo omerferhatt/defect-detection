@@ -24,13 +24,13 @@ class DefectLocalizeModel:
         # FCN block - 1
         x = BatchNormalization()(self.backbone.output)
         x = Conv2D(32, (7, 7))(x)
-        x = Dropout(0.2)(x)
+        x = Dropout(0.3)(x)
         x = BatchNormalization()(x)
         y_1 = ReLU()(x)
 
         # FCN block for bbox center point regression
         x = Conv2D(16, (1, 1))(y_1)
-        x = Dropout(0.2)(x)
+        x = Dropout(0.3)(x)
         x = BatchNormalization()(x)
         x_center = ReLU()(x)
         x = Conv2D(2, (1, 1), activation='sigmoid')(x_center)
@@ -38,15 +38,15 @@ class DefectLocalizeModel:
 
         # FCN block for for bbox parametric regression
         x = Conv2D(16, (1, 1))(y_1)
-        x = Dropout(0.2)(x)
+        x = Dropout(0.3)(x)
         x = BatchNormalization()(x)
         x = ReLU()(x)
         # Information from center point concatenated
         x = Concatenate()([x, x_center])
         x = BatchNormalization()(x)
-        x = Dropout(0.2)(x)
+        x = Dropout(0.3)(x)
         x = Conv2D(16, (1, 1))(x)
-        x = Dropout(0.2)(x)
+        x = Dropout(0.3)(x)
         x = BatchNormalization()(x)
         x = ReLU()(x)
         x = Conv2D(3, (1, 1), activation='sigmoid')(x)
